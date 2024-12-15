@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solar Map</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.16.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.16.0/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiaG93YXJkMDEyMiIsImEiOiJja3cxamRraDExOGw3Mm9sdGYzdDU2N2RkIn0.a3XF2BGsN3SCmzhSOgvuVgN';
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/howard0122/cm4132u6400nx01qq1odd4jds',
+            center: [-73.961, 40.807],
+            zoom: 15
+        });
+
+        map.on('load', () => {
+            map.addSource('solar-data', {
+                type: 'geojson',
+                data: 'export_updated.geojson' // Ensure this path matches your hosting setup
+            });
+
+            map.addLayer({
+                id: 'solar-layer',
+                type: 'fill',
+                source: 'solar-data',
+                paint: {
+                    'fill-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'E_m'],
+                        0, '#ffffcc',
+                        2, '#c2e699',
+                        4, '#78c679',
+                        6, '#31a354',
+                        8, '#006837'
+                    ],
+                    'fill-opacity': 0.8
+                }
+            });
+
+            map.on('click', 'solar-layer', (e) => {
+                if (e.features && e.features.length > 0) {
+                    const properties = e.features[0].properties;
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(`
+                            <strong>Building:</strong> ${properties.building_name || 'Unknown'}<br>
+                            <strong>Monthly Solar Output (E_m):</strong> ${properties.E_m || 'N/A'} kWh<br>
+                            <strong>Monthly Irradiation (H(i)_m):</strong> ${properties['H(i)_m'] || 'N/A'} kWh/m²
+                        `)
+                        .addTo(map);
+                }
+            });
+
+            map.on('mouseenter', 'solar-layer', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+            map.on('mouseleave', 'solar-layer', () => {
+                map.getCanvas().style.cursor = '';
+            });
+        });
+    </script>
+</body>
+</html>
